@@ -1,0 +1,112 @@
+Model:
+  Architecture:
+  - Input:
+      name: input_signal
+      shape: [33280,]
+      input: x
+  - Spectrogram:
+      name: complex_stft
+      calculate: magnitude
+      win_size: 1024
+      hop_size: 512
+  - MelScale:
+      sample_rate: 16000
+      num_spectrogram_bins: 513
+      lower_edge_hertz: 50.0
+      upper_edge_hertz: 8000.0
+  - Log:
+      offset: 1e-12
+  - TranslateRange:
+      original_range: [-5.9,4.14]
+      target_range: [0,1]
+      name: original_spectrogram
+  - ExpandDims:
+      axis: -1
+      name: in_encoder
+  - Stamp:
+      what:
+      - Conv:
+          filters: [16,32,64,128,256,512]
+          kernel_size: [[3,1]]
+          padding: SAME
+          input: [[in_encoder],[enc1],[enc2],[enc3],[enc4],[enc5]]
+      - BatchNormalization: {}
+      - Activation:
+          activation: relu
+      - Conv:
+          filters: [16,32,64,128,256,512]
+          kernel_size: [[1,3]]
+          padding: SAME
+      - BatchNormalization: {}
+      - Activation:
+          activation: relu
+          name: [ec1,ec2,ec3,ec4,ec5,ec6]
+      - Conv:
+          filters: [16,32,64,128,256,512]
+          kernel_size: [[1,1]]
+          padding: SAME
+          input: [[in_encoder],[enc1],[enc2],[enc3],[enc4],[enc5]]
+      - BatchNormalization: {}
+      - Activation:
+          activation: relu
+          name: [epw1,epw2,epw3,epw4,epw5,epw6]
+      - Add:
+          input: [[epw1,ec1],[epw2,ec2],[epw3,ec3],[epw4,ec4],[epw5,ec5],[epw6,ec6]]
+      - MaxPool2D:
+          pool_size: 2
+          name: [enc1,enc2,enc3,enc4,enc5,enc6]
+      times: 6
+  - Flatten: {}
+  - Dense:
+      units: 512
+      name: global_embeddings
+  - Reshape:
+      target_shape: [1,1,512]
+      name: in_decoder
+  - Stamp:
+      what:
+      - Conv:
+          filters: [512,256,128,64,32,16]
+          kernel_size: [[1,3]]
+          padding: SAME
+          input: [[in_decoder],[dec1],[dec2],[dec3],[dec4],[dec5]]
+      - BatchNormalization: {}
+      - Activation:
+          activation: relu
+      - Conv:
+          filters: [512,256,128,64,32,16]
+          kernel_size: [[3,1]]
+          padding: SAME
+      - BatchNormalization: {}
+      - Activation:
+          activation: relu
+          name: [dc1,dc2,dc3,dc4,dc5,dc6]
+      - Conv:
+          filters: [512,256,128,64,32,16]
+          kernel_size: [[1,1]]
+          padding: SAME
+          input: [[in_decoder],[dec1],[dec2],[dec3],[dec4],[dec5]]
+      - BatchNormalization: {}
+      - Activation:
+          activation: relu
+          name: [dpw1,dpw2,dpw3,dpw4,dpw5,dpw6]
+      - Add:
+          input: [[dpw1,dc1],[dpw2,dc2],[dpw3,dc3],[dpw4,dc4],[dpw5,dc5],[dpw6,dc6]]
+      - UpSampling2D:
+          size: [[2,2]]
+          name: [dec1,dec2,dec3,dec4,dec5,dec6]
+      times: 6
+  - Conv:
+      filters: 1
+      kernel_size: [3,3]
+      padding: SAME
+  - Squeeze:
+      axis: -1
+      name: estimated_spectrogram
+  - MSE:
+      input: [estimated_spectrogram,original_spectrogram]
+      name: error
+      lnorm: 2.0
+  inputs: [input_signal]
+  outputs: [error]
+

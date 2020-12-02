@@ -34,12 +34,12 @@ for gpu in gpus:
         print(e)
 logical_gpus = tf.config.experimental.list_logical_devices('GPU')
 
-batch_size = 64
+batch_size = 32
 
-dienen_model = dienen.Model('models/cnn_factorized.yaml')
-model = dienen_model.build()
-model_config = dienen_model.original_config
-#model = ae_1(16896)
+#dienen_model = dienen.Model('models/cnn_factorized.yaml')
+#model = dienen_model.build()
+#model_config = dienen_model.original_config
+model = ae_1(16896)
 model.summary()
 
 #from IPython import embed
@@ -54,7 +54,10 @@ model.compile(optimizer=tf.keras.optimizers.RMSprop(clipnorm=1.0),loss=mean_loss
 #audio_train_data, audio_test_data = gsc.get_gsc()
 
 import audioset
-audio_train_data, audio_test_data = audioset.get('../Datasets/Audioset/*.wav')
+audio_train_data, audio_test_data = audioset.get('../Datasets/Audioset/test_data/*.wav',winsize=16896,hopsize=16896)
+
+from IPython import embed
+embed()
 
 from callbacks import WANDBLogger
 
@@ -66,8 +69,8 @@ loggers = {'Spectrograms': {'test_data': [audio_test_data,audio_test_data],
            'TrainMetrics': {'freq': 1, 'unit': 'step'}
           }
 
-wandb.init(name='ae_factorized_audioset', project='ae_mini_experiments',config=model.get_config())
+wandb.init(name='ae_1_audioset', project='ae_mini_experiments',config=model.get_config())
 
-cbks = [WANDBLogger(loggers=loggers),tf.keras.callbacks.ModelCheckpoint('ckpts')]
+cbks = [WANDBLogger(loggers=loggers),tf.keras.callbacks.ModelCheckpoint('../Datasets/ckpts')]
 
 model.fit(audio_train_data,audio_train_data,epochs=50,batch_size=batch_size,callbacks = cbks)

@@ -5,7 +5,7 @@ import tensorflow.keras.layers as tfkl
 def ae_1(max_len):
   x = tfkl.Input((max_len,),name='input_signal')
   pre = Spectrogram(win_size=1024,hop_size=512,fft_size=1024)(x)
-  pre = MelScale(num_mel_bins=64,num_spectrogram_bins=513,sample_rate=16000,lower_edge_hertz=125,upper_edge_hertz=8000,name='original_spec')(pre)
+  pre = MelScale(num_mel_bins=64,num_spectrogram_bins=513,sample_rate=16000,lower_edge_hertz=125,upper_edge_hertz=8000,name='original_spectrogram')(pre)
   enc = tf.expand_dims(pre,axis=-1)
   enc = tfkl.Conv2D(64,6,strides=2,padding='SAME')(enc)
   enc = tfkl.BatchNormalization()(enc)
@@ -36,7 +36,7 @@ def ae_1(max_len):
   dec = tfkl.BatchNormalization()(dec)
   dec = tfkl.Activation('relu')(dec)
   dec = tfkl.Conv2DTranspose(1,6,strides=1,padding='SAME')(dec)
-  dec = Squeeze(axis=-1,name='spec_out')(dec)
+  dec = Squeeze(axis=-1,name='estimated_spectrogram')(dec)
 
   mse = (dec - pre)**2
 

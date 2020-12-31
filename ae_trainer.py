@@ -54,7 +54,8 @@ model.compile(optimizer=tf.keras.optimizers.RMSprop(clipnorm=1.0),loss=mean_loss
 #audio_train_data, audio_test_data = gsc.get_gsc()
 
 import audioset
-audio_train_data, audio_test_data = audioset.get('../Datasets/Audioset/test_data/*.wav',winsize=16896,hopsize=16896)
+audioset.get_audioset(10,'../Datasets/Audioset/test_data')
+audio_train_data, audio_test_data = audioset.read_audioset('../Datasets/Audioset/test_data/*.wav',winsize=16896,hopsize=16896)
 
 from IPython import embed
 embed()
@@ -70,7 +71,6 @@ loggers = {'Spectrograms': {'test_data': [audio_test_data,audio_test_data],
           }
 
 wandb.init(name='ae_1_audioset', project='ae_mini_experiments',config=model.get_config())
-
 cbks = [WANDBLogger(loggers=loggers),tf.keras.callbacks.ModelCheckpoint('../Datasets/ckpts')]
 
 model.fit(audio_train_data,audio_train_data,epochs=50,batch_size=batch_size,callbacks = cbks)

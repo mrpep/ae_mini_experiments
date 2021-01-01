@@ -16,10 +16,10 @@ def get_audioset(n_zips, destination_path):
     all_files = [k['Key'] for k in get_all_s3_objects(s3_client,Bucket=bucket_name,Prefix=prefix)]
     if not Path(destination_path).exists():
         Path(destination_path).mkdir(parents=True)
-    for f in all_files[:n_zips]:
-        destination_path = str(Path(destination_path,f.split('/')[-1]).expanduser().absolute())
-        S3File('s3://{}/{}'.format(bucket_name,f)).download(destination_path)
-        CompressedFile(destination_path).extract(destination_path.parent)
+    for f in tqdm.tqdm(all_files[:n_zips]):
+        destination_file = str(Path(destination_path,f.split('/')[-1]).expanduser().absolute())
+        S3File('s3://{}/{}'.format(bucket_name,f)).download(destination_file)
+        CompressedFile(destination_file).extract(destination_path)
 
 def read_audioset(path, winsize=33280, hopsize=33280):
     def frame(x,winsize,hopsize):

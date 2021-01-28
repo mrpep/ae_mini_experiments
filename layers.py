@@ -102,3 +102,31 @@ class Squeeze(tfkl.Layer):
             'axis': self.axis
         })
         return config
+
+class VQLayer(tfkl.Layer):
+  def __init__(self,K,D,beta_commitment = 2.5,name=None):
+    super(VQLayer, self).__init__(name=name)
+    #e_init = tf.keras.initializers.TruncatedNormal(stddev=0.02)
+    e_init = tf.keras.initializers.VarianceScaling(distribution='uniform')
+    self.beta_commitment = beta_commitment
+    self.embeddings = tf.Variable(
+              initial_value=e_init(shape=(K, D), dtype="float32"),
+              trainable=True,
+        )
+  
+  def call(self, ze):
+    ze_ = tf.expand_dims(ze,axis=-2) # (batch_size, 1, D)
+    distances = tf.norm(self.embeddings-ze_,axis=-1) # (batch_size, K) -> distancia de cada instancia a cada elemento del diccionario
+    k = tf.argmin(distances,axis=-1) # indice del elemento con menor distancia
+    zq = tf.gather(self.embeddings,k) #elemento del diccionario con menor distancia
+    straight_through = tfkl.Lambda(lambda x : x[1] + tf.stop_gradient(x[0] - x[1]), name="straight_through_estimator")([zq,ze]) #Devuelve zq pero propaga a ze
+
+    vq_loss = tf.reduce_mean((tf.stop_gradient(ze) - zq)**2) #Error entre encoder y diccionario propagado al diccionario
+    commit_loss = self.beta_commitment*tf.reduce_mean((ze - tf.stop_gradient(zq))**2) #Error entre encoder y diccionario propagado al encoder
+
+    self.add_loss(vq_loss)
+    self.add_loss(commit_loss)
+    self.add_metric(vq_loss, name='vq_loss')
+    self.add_metric(tf.reduce_mean(tf.norm(ze,axis=-1)),name='ze_norm')
+    self.add_metric(tf.reduce_mean(tf.norm(zq,axis=-1)),name='zq_norm')
+    return straight_through

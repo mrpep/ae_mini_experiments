@@ -1,0 +1,95 @@
+Model: #Based on NVAE https://arxiv.org/pdf/2007.03898.pdf
+  Architecture:
+  - Input:
+      name: input_signal
+      shape: [33024,]
+      input: x
+  - Spectrogram:
+      calculate: magnitude
+      win_size: 512
+      hop_size: 256
+  - ExpandDims:
+      axis: -1
+  - Cropping2D:
+      cropping: [[0,0],[0,1]]
+      name: original_spectrogram
+  - Conv2D:
+      filters: 64
+      kernel_size: 3
+      padding: same
+      name: in_encoder
+  - Stamp:
+      name: enc
+      what:
+      - BatchNormalization: {}
+      - Activation:
+          activation: swish
+      - Conv2D:
+          filters: 64
+          kernel_size: 3
+          padding: same
+      - BatchNormalization: {}
+      - Activation:
+          activation: swish
+      - Conv2D:
+          filters: 64
+          kernel_size: 3
+          padding: same
+      - SqueezeAndExcite2D:
+          ratio: 4
+          name: [enc_se1, enc_se2, enc_se3,enc_se4, enc_se5, enc_se6,enc_se7, enc_se8, enc_se9]
+      - Add:
+          input: [[enc_se1,in_encoder],[enc_se2,enc_mp1],[enc_se3,enc_mp2],[enc_se4,enc_mp3],[enc_se5,enc_mp4],[enc_se6,enc_mp5],[enc_se7,enc_mp6],[enc_se8,enc_mp7],[enc_se9,enc_mp8]]
+      - MaxPool2D:
+          pool_size: [1,2,1,2,1,2,1,2,1]
+          name: [enc_mp1, enc_mp2, enc_mp3, enc_mp4, enc_mp5, enc_mp6, enc_mp7, enc_mp8, enc_mp9]
+      times: 9
+  - BatchNormalization: {}
+  - VQLayer:
+      name: codebook
+      K: 512
+      D: 64
+      beta_commitment: 0.5
+  - Stamp:
+      name: dec
+      what:
+      - BatchNormalization: {}
+      - Conv2D:
+          filters: 512
+          kernel_size: 1
+          padding: same
+      - BatchNormalization: {}
+      - Activation:
+          activation: swish
+      - Conv:
+          depthwise: True
+          kernel_size: [3,3]
+          depth_multiplier: 1
+          padding: same
+      - BatchNormalization: {}
+      - Activation:
+          activation: swish
+      - Conv2D:
+          filters: 64
+          kernel_size: 1
+          padding: same
+      - BatchNormalization: {}
+      - SqueezeAndExcite2D:
+          ratio: 4
+          name: [dec_se1, dec_se2, dec_se3,dec_se4, dec_se5, dec_se6,dec_se7, dec_se8, dec_se9]
+      - Add:
+          input: [[dec_se1,enc],[dec_se2,dec_up1],[dec_se3,dec_up2],[dec_se4,dec_up3],[dec_se5,dec_up4],[dec_se6,dec_up5],[dec_se7,dec_up6],[dec_se8,dec_up7],[dec_se9,dec_up8]]
+      - UpSampling2D:
+          size: [1,2,1,2,1,2,1,2,1]
+          name: [dec_up1, dec_up2, dec_up3, dec_up4, dec_up5, dec_up6, dec_up7, dec_up8, dec_up9]
+  - Conv:
+      filters: 1
+      kernel_size: [3,3]
+      padding: SAME
+      name: estimated_spectrogram
+  - MSE:
+      input: [estimated_spectrogram,original_spectrogram]
+      name: error
+      lnorm: 2.0
+  inputs: [input_signal]
+  outputs: [error]

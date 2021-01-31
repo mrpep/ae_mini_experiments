@@ -78,7 +78,7 @@ Model: #Based on NVAE https://arxiv.org/pdf/2007.03898.pdf
           ratio: 4
           name: [dec_se1, dec_se2, dec_se3,dec_se4, dec_se5, dec_se6,dec_se7, dec_se8, dec_se9]
       - Add:
-          input: [[dec_se1,enc],[dec_se2,dec_up1],[dec_se3,dec_up2],[dec_se4,dec_up3],[dec_se5,dec_up4],[dec_se6,dec_up5],[dec_se7,dec_up6],[dec_se8,dec_up7],[dec_se9,dec_up8]]
+          input: [[dec_se1,codebook],[dec_se2,dec_up1],[dec_se3,dec_up2],[dec_se4,dec_up3],[dec_se5,dec_up4],[dec_se6,dec_up5],[dec_se7,dec_up6],[dec_se8,dec_up7],[dec_se9,dec_up8]]
       - UpSampling2D:
           size: [1,2,1,2,1,2,1,2,1]
           name: [dec_up1, dec_up2, dec_up3, dec_up4, dec_up5, dec_up6, dec_up7, dec_up8, dec_up9]

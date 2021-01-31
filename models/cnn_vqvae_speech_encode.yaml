@@ -1,0 +1,19 @@
+Model:
+  name: vqvae_encoder
+  External:
+    Models:
+      pretrained_model: pretrained_models/vqvae-librispeech/model.dnn
+  Architecture:
+  - Input:
+      name: input_signal
+      shape: [16512,]
+      input: x
+  - External:
+      name: vqvae_codebook
+      model: pretrained_model
+      mods:
+      - codebook.mode: return_indexs
+      up_to: codebook
+      trainable: False
+  inputs: [input_signal]
+  outputs: [vqvae_codebook]

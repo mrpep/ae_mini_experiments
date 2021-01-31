@@ -72,4 +72,5 @@ loggers = {'Spectrograms': {'test_data': [audio_test_data,audio_test_data],
 
 wandb.init(name='vqvae_librispeech_1', project='vqvae_librispeech_2',config=model.get_config())
 cbks = [WANDBLogger(loggers=loggers),tf.keras.callbacks.ModelCheckpoint('../ckpts/weights.{epoch:02d}-{loss:.2f}.hdf5')]
+
 model.fit(audio_train_data,audio_train_data,epochs=50,batch_size=batch_size,callbacks = cbks)

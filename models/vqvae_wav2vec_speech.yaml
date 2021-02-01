@@ -1,0 +1,49 @@
+Model:
+  Architecture:
+  - Input:
+      name: input_signal
+      shape: [16000]
+      input: x
+  - ExpandDims:
+      axis: -1
+  - BatchNormalization: {}
+  - Stamp:
+      name: enc
+      what:
+      - Conv:
+          filters: 128
+          strides: [[5],[2],[2],[2],[2],[2],[2]]
+          kernel_size: [[10],[3],[3],[3],[3],[2],[2]]
+          padding: SAME
+      - LayerNormalization: {}
+      - Activation:
+          activation: gelu      
+      times: 7
+  - VQLayer:
+      name: codebook
+      K: 512
+      D: 128
+      beta_commitment: 0.5  
+  - Stamp:
+      name: dec
+      what:
+      - Conv:
+          filters: 128
+          strides: [[2],[2],[2],[2],[2],[2],[5]]
+          kernel_size: [[2],[2],[3],[3],[3],[3],[10]]
+          transpose: True
+          padding: SAME
+      - LayerNormalization: {}
+      - Activation:
+          activation: gelu      
+      times: 7
+  - Conv:
+      filters: 1
+      kernel_size: 1
+      padding: SAME
+      activation: tanh
+  - Squeeze:
+      axis: -1
+      name: estimated_audio
+  inputs: [input_signal]
+  outputs: [estimated_audio]

@@ -12,6 +12,7 @@ import wandb
 
 from layers import *
 from models import *
+from losses import *
 
 import dienen
 
@@ -36,7 +37,7 @@ logical_gpus = tf.config.experimental.list_logical_devices('GPU')
 
 batch_size = 24
 
-dienen_model = dienen.Model('models/cnn_vqvae_speech.yaml')
+dienen_model = dienen.Model('models/vqvae_wav2vec_speech.yaml')
 model = dienen_model.build()
 model_config = dienen_model.original_config
 #model = ae_1(16896)
@@ -45,7 +46,7 @@ model.summary()
 def mean_loss(y_true,y_pred):
   return tf.reduce_mean(y_pred)
 
-model.compile(optimizer=tf.keras.optimizers.RMSprop(clipnorm=1.0),loss=mean_loss)
+model.compile(optimizer=tf.keras.optimizers.RMSprop(clipnorm=1.0),loss=SpectralLoss())
 
 #import gsc
 #audio_train_data, audio_test_data = gsc.get_gsc()
@@ -64,13 +65,14 @@ from callbacks import WANDBLogger
 
 loggers = {'Spectrograms': {'test_data': [audio_test_data,audio_test_data],
                             'in_layers': ['input_signal'],
-                            'out_layers': ['original_spectrogram', 'estimated_spectrogram'],
+                            'out_layers': ['input_signal', 'estimated_audio'],
                             'freq': 1,
-                            'unit': 'epoch'},
+                            'unit': 'epoch',
+                            'is_audio': True},
            'TrainMetrics': {'freq': 1, 'unit': 'step'}
           }
 
-wandb.init(name='vqvae_librispeech_1', project='vqvae_librispeech_2',config=model.get_config())
+wandb.init(name='vqvae_librispeech_raw', project='vqvae_librispeech_raw',config=model.get_config())
 cbks = [WANDBLogger(loggers=loggers),tf.keras.callbacks.ModelCheckpoint('../ckpts/weights.{epoch:02d}-{loss:.2f}.hdf5')]
 
 model.fit(audio_train_data,audio_train_data,epochs=50,batch_size=batch_size,callbacks = cbks)

@@ -5,7 +5,7 @@ import numpy as np
 import tqdm
 import soundfile as sf
 
-def read_librispeech(path, winsize=16512):
+def read_librispeech(path, winsize=16000):
     files = list(Path(path).rglob('*.flac'))
     wavs = []
     for f in tqdm.tqdm(files[:10000]):

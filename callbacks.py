@@ -7,6 +7,7 @@ import wandb
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
+import librosa
 
 class WANDBLogger(Callback):
     def __init__(self, wandb_run = None, loggers=None):
@@ -19,12 +20,14 @@ class WANDBLogger(Callback):
         
     def log_spectrograms(self, params, logs):
         inputs = [self.model.get_layer(l).output for l in params.get('in_layers',None)]
-        outs = [self.model.get_layer(l).output for l in params.get('out_layers',None)]
-        
+        outs = [self.model.get_layer(l).output for l in params.get('out_layers',None)]      
 
         predict_fn = tf.keras.backend.function(inputs=inputs,outputs=outs)
         plot_lims = params.get('plot_lims', [None, None])
         test_data = params.get('test_data',None)
+        is_audio = params.get('is_audio', False)
+        win_length = params.get('win_length',256)
+        hop_length = params.get('hop_length',128)
 
         #if isinstance(test_data,BatchGenerator):
         #    x,y = test_data.__getitem__(0)
@@ -40,7 +43,11 @@ class WANDBLogger(Callback):
                 plt.figure()
                 title = '{}'.format(out_name.replace('/','-'))
                 plt.title(title)
-                plt.imshow(np.squeeze(y_pred[j][i]).T,aspect='auto',origin='lower',vmin=plot_lims[0],vmax=plot_lims[1])
+                if is_audio:
+                    stft = librosa.core.stft(y_pred[j][i],hop_length=hop_length,win_length=win_length,n_fft=win_length)
+                    plt.imshow(np.abs(stft),aspect='auto',origin='lower')
+                else:
+                    plt.imshow(np.squeeze(y_pred[j][i]).T,aspect='auto',origin='lower',vmin=plot_lims[0],vmax=plot_lims[1])
                 sample_plots.append(wandb.Image(plt))
                 plt.close()
 

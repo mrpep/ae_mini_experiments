@@ -1,0 +1,27 @@
+gpu_config:
+  allow_growth: False
+Model:
+  name: vqvae_prior
+  Architecture:
+  - Input:
+      name: input_indexs
+      shape: [31,513]
+      input: x
+  - Stamp:
+      what:
+      - Conv:
+          kernel_size: 4
+          filters: 32
+          dilation_rate: [1,2,4,1,2,4]
+          padding: causal
+      - BatchNormalization: {}
+      - Activation:
+          activation: gelu
+  - Conv1D:
+      name: dense_to_sparse
+      kernel_size: 1
+      filters: 513
+  - Softmax:
+      name: code_probs
+  inputs: [input_indexs]
+  outputs: [code_probs]

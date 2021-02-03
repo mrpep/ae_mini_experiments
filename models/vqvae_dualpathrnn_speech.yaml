@@ -1,0 +1,64 @@
+Model:
+    Architecture:
+        - Input:
+            name: input_signal
+            shape: [16000]
+            input: x
+        - ExpandDims:
+            axis: -1
+        - Frame:
+            win_size: 256
+            hop_size: 128
+            axis: 1
+        - Window:
+            window: hann
+            size: 256
+        - LSTM:
+            name: frame_encoder
+            units: 256
+            activation: gelu
+            time_distributed: True
+        - Stamp:
+            name: encoder
+            what:
+            - Conv:
+                filters: [128,128,128,128]
+                kernel_size: 4
+                strides: [2,1,2,1]
+                padding: SAME
+            - Activation:
+                activation: gelu
+        - LSTM:
+            name: context_encoder
+            units: 128
+            return_sequences: True
+        - BatchNormalization: {}
+        - VQLayer:
+            name: codebook
+            K: 1024
+            D: 128
+            beta_commitment: 0.1
+        - Stamp:
+            name: decoder
+            what:
+            - Conv:
+                filters: [128,128,128,128]
+                kernel_size: 4
+                strides: [2,1,2,1]
+                padding: SAME
+                transpose: True
+            - Activation:
+                activation: gelu  
+        - LSTM:
+            name: frame_decoder
+            units: 256
+            return_sequences: True
+            activation: tanh
+        - Window:
+            window: hann
+            size: 256
+        - OverlapAdd:
+            hop_size: 128
+            name: estimated_audio
+    inputs: [input_signal]
+    outputs: [estimated_audio]

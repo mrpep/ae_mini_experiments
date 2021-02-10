@@ -1,0 +1,29 @@
+gpu_config:
+  allow_growth: False
+Model:
+  name: vqvae_prior
+  Architecture:
+  - Input:
+      name: input_indexs
+      shape: [8,8,513]
+      input: x
+  - Conv:
+      name: sparse_to_dense
+      kernel_size: [1]
+      filters: 16
+  - Reshape:
+      target_shape: [8,128]
+  - LSTM:
+      name: ar_lstm
+      return_sequences: True
+      units: 128
+  - Reshape:
+      target_shape: [8,8,16]
+  - Conv:
+      name: dense_to_sparse
+      kernel_size: [1]
+      filters: 513
+  - Softmax:
+      name: code_probs
+  inputs: [input_indexs]
+  outputs: [code_probs]

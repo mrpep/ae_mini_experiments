@@ -1,0 +1,21 @@
+gpu_config:
+  allow_growth: False
+Model:
+  name: vqvae_decoder
+  External:
+    Models:
+      pretrained_model: pretrained_models/cnn_vqvae_speech_stftin/model.dnn
+  Architecture:
+  - Input:
+      name: input_code
+      shape: [8,8]
+      input: x
+  - External:
+      name: vqvae_decoder
+      model: pretrained_model
+      mods:
+      - codebook.mode: decode_indexs
+      from: codebook
+      trainable: False
+  inputs: [input_code]
+  outputs: [vqvae_decoder]
